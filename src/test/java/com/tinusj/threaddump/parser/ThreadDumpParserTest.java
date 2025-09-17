@@ -58,8 +58,8 @@ class ThreadDumpParserTest {
         // Then
         assertThat(result).hasSize(1);
         ThreadInfo thread = result.get(0);
-        assertThat(thread.getName()).isEqualTo("main");
-        assertThat(thread.getId()).isEqualTo(1);
-        assertThat(thread.getPriority()).isEqualTo(5);
+        assertThat(thread.name()).isEqualTo("main");
+        assertThat(thread.id()).isEqualTo(1);
+        assertThat(thread.priority()).isEqualTo(5);
     }
 }

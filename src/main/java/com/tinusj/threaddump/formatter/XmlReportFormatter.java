@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.tinusj.threaddump.model.DiagnosticReport;
-import com.tinusj.threaddump.model.ReportFormat;
+import com.tinusj.threaddump.enums.ReportFormat;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 

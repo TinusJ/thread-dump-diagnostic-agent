@@ -1,8 +1,10 @@
 package com.tinusj.threaddump.service;
 
+import com.tinusj.threaddump.enums.Severity;
 import com.tinusj.threaddump.model.DiagnosticFinding;
 import com.tinusj.threaddump.model.DiagnosticReport;
 import com.tinusj.threaddump.model.ThreadStatistics;
+import com.tinusj.threaddump.service.impl.DiagnosticServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,7 +19,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for DiagnosticService.
+ * Unit tests for DiagnosticServiceImpl.
  */
 @ExtendWith(MockitoExtension.class)
 class DiagnosticServiceTest {
@@ -29,48 +31,53 @@ class DiagnosticServiceTest {
     
     @BeforeEach
     void setUp() {
-        diagnosticService = new DiagnosticService(threadDumpAnalyzer);
+        diagnosticService = new DiagnosticServiceImpl(threadDumpAnalyzer);
     }
     
     @Test
-    void analyzThreadDump_ShouldReturnValidReport_WhenGivenValidInput() {
+    void analyzeThreadDump_ShouldReturnValidReport_WhenGivenValidInput() {
         // Given
         String threadDumpContent = "Sample thread dump content";
         String source = "test-source";
         
-        ThreadStatistics mockStats = ThreadStatistics.builder()
-                .totalThreads(10)
-                .blockedThreads(1)
-                .waitingThreads(2)
-                .runnableThreads(7)
-                .build();
+        ThreadStatistics mockStats = new ThreadStatistics(
+                10,
+                null,
+                0,
+                1,
+                2,
+                7
+        );
         
         List<DiagnosticFinding> mockFindings = new ArrayList<>();
-        mockFindings.add(DiagnosticFinding.builder()
-                .type("TEST_FINDING")
-                .description("Test finding")
-                .severity(DiagnosticFinding.Severity.LOW)
-                .build());
+        mockFindings.add(new DiagnosticFinding(
+                "TEST_FINDING",
+                "Test finding",
+                Severity.LOW,
+                null,
+                null,
+                null
+        ));
         
         when(threadDumpAnalyzer.analyzeStatistics(anyString())).thenReturn(mockStats);
         when(threadDumpAnalyzer.analyzeFindings(anyString())).thenReturn(mockFindings);
         
         // When
-        DiagnosticReport report = diagnosticService.analyzThreadDump(threadDumpContent, source);
+        DiagnosticReport report = diagnosticService.analyzeThreadDump(threadDumpContent, source);
         
         // Then
         assertThat(report).isNotNull();
-        assertThat(report.getId()).isNotNull();
-        assertThat(report.getSource()).isEqualTo(source);
-        assertThat(report.getStatus()).isEqualTo("COMPLETED");
-        assertThat(report.getStatistics()).isEqualTo(mockStats);
-        assertThat(report.getFindings()).hasSize(1);
-        assertThat(report.getSuggestedFixes()).isNotEmpty();
-        assertThat(report.getSummary()).isNotNull();
+        assertThat(report.id()).isNotNull();
+        assertThat(report.source()).isEqualTo(source);
+        assertThat(report.status().toString()).isEqualTo("COMPLETED");
+        assertThat(report.statistics()).isEqualTo(mockStats);
+        assertThat(report.findings()).hasSize(1);
+        assertThat(report.suggestedFixes()).isNotEmpty();
+        assertThat(report.summary()).isNotNull();
     }
     
     @Test
-    void analyzThreadDump_ShouldHandleException_WhenAnalysisFails() {
+    void analyzeThreadDump_ShouldHandleException_WhenAnalysisFails() {
         // Given
         String threadDumpContent = "Invalid content";
         String source = "test-source";
@@ -79,11 +86,11 @@ class DiagnosticServiceTest {
                 .thenThrow(new RuntimeException("Analysis failed"));
         
         // When
-        DiagnosticReport report = diagnosticService.analyzThreadDump(threadDumpContent, source);
+        DiagnosticReport report = diagnosticService.analyzeThreadDump(threadDumpContent, source);
         
         // Then
         assertThat(report).isNotNull();
-        assertThat(report.getStatus()).isEqualTo("ERROR");
-        assertThat(report.getSummary()).contains("Analysis failed");
+        assertThat(report.status().toString()).isEqualTo("ERROR");
+        assertThat(report.summary()).contains("Analysis failed");
     }
 }

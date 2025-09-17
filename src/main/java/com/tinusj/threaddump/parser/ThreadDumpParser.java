@@ -1,7 +1,7 @@
 package com.tinusj.threaddump.parser;
 
 import com.tinusj.threaddump.model.ThreadInfo;
-import com.tinusj.threaddump.model.ThreadState;
+import com.tinusj.threaddump.enums.ThreadState;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -55,34 +55,40 @@ public class ThreadDumpParser {
     }
     
     private ThreadInfo parseThreadBlock(String block) {
-        ThreadInfo.ThreadInfoBuilder builder = ThreadInfo.builder();
+        String name = null;
+        long id = 0;
+        int priority = 0;
+        ThreadState state = ThreadState.UNKNOWN;
+        String lockName = null;
+        String lockOwner = null;
+        boolean daemon = false;
+        String group = null;
         
         // Parse thread header
         Matcher headerMatcher = THREAD_HEADER_PATTERN.matcher(block);
         if (headerMatcher.find()) {
-            builder.name(headerMatcher.group(1))
-                   .id(Long.parseLong(headerMatcher.group(2)))
-                   .priority(Integer.parseInt(headerMatcher.group(3)));
+            name = headerMatcher.group(1);
+            id = Long.parseLong(headerMatcher.group(2));
+            priority = Integer.parseInt(headerMatcher.group(3));
         }
         
         // Parse thread state
         Matcher stateMatcher = THREAD_STATE_PATTERN.matcher(block);
         if (stateMatcher.find()) {
             try {
-                builder.state(ThreadState.valueOf(stateMatcher.group(1)));
+                state = ThreadState.valueOf(stateMatcher.group(1));
             } catch (IllegalArgumentException e) {
-                builder.state(ThreadState.UNKNOWN);
+                state = ThreadState.UNKNOWN;
             }
         }
         
         // Extract stack trace (simplified)
         List<String> stackTrace = extractStackTrace(block);
-        builder.stackTrace(stackTrace);
         
         // Check if daemon thread
-        builder.daemon(block.contains("daemon"));
+        daemon = block.contains("daemon");
         
-        return builder.build();
+        return new ThreadInfo(name, id, state, lockName, lockOwner, stackTrace, daemon, priority, group);
     }
     
     private List<String> extractStackTrace(String block) {

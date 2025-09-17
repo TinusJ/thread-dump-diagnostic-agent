@@ -1,7 +1,8 @@
 package com.tinusj.threaddump.controller;
 
+import com.tinusj.threaddump.enums.ReportFormat;
+import com.tinusj.threaddump.enums.ReportStatus;
 import com.tinusj.threaddump.model.DiagnosticReport;
-import com.tinusj.threaddump.model.ReportFormat;
 import com.tinusj.threaddump.service.DiagnosticService;
 import com.tinusj.threaddump.service.ReportFormatterService;
 import com.tinusj.threaddump.skill.ThreadDumpAnalysisSkill;
@@ -43,16 +44,18 @@ class ThreadDumpControllerTest {
     void analyzeThreadDumpText_ShouldReturnReport_WhenGivenValidContent() {
         // Given
         String threadDumpContent = "Sample thread dump content";
-        DiagnosticReport mockReport = DiagnosticReport.builder()
-                .id("test-id")
-                .timestamp(LocalDateTime.now())
-                .source("text-input")
-                .status("COMPLETED")
-                .findings(new ArrayList<>())
-                .suggestedFixes(new ArrayList<>())
-                .build();
+        DiagnosticReport mockReport = new DiagnosticReport(
+                "test-id",
+                LocalDateTime.now(),
+                "text-input",
+                null,
+                new ArrayList<>(),
+                new ArrayList<>(),
+                ReportStatus.COMPLETED,
+                "Test summary"
+        );
         
-        when(diagnosticService.analyzThreadDump(anyString(), anyString())).thenReturn(mockReport);
+        when(diagnosticService.analyzeThreadDump(anyString(), anyString())).thenReturn(mockReport);
         when(reportFormatterService.formatReport(any(), any())).thenReturn("{\"id\":\"test-id\"}");
         
         // When

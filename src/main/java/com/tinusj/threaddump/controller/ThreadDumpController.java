@@ -1,7 +1,7 @@
 package com.tinusj.threaddump.controller;
 
 import com.tinusj.threaddump.model.DiagnosticReport;
-import com.tinusj.threaddump.model.ReportFormat;
+import com.tinusj.threaddump.enums.ReportFormat;
 import com.tinusj.threaddump.service.DiagnosticService;
 import com.tinusj.threaddump.service.ReportFormatterService;
 import com.tinusj.threaddump.skill.ThreadDumpAnalysisSkill;
@@ -60,7 +60,7 @@ public class ThreadDumpController {
                         .body("Thread dump content cannot be empty");
             }
             
-            DiagnosticReport report = diagnosticService.analyzThreadDump(threadDumpContent, "text-input");
+            DiagnosticReport report = diagnosticService.analyzeThreadDump(threadDumpContent, "text-input");
             String formattedReport = reportFormatterService.formatReport(report, format);
             
             HttpHeaders headers = new HttpHeaders();
@@ -104,13 +104,13 @@ public class ThreadDumpController {
             String threadDumpContent = new String(file.getBytes(), StandardCharsets.UTF_8);
             String filename = file.getOriginalFilename() != null ? file.getOriginalFilename() : "uploaded-file";
             
-            DiagnosticReport report = diagnosticService.analyzThreadDump(threadDumpContent, filename);
+            DiagnosticReport report = diagnosticService.analyzeThreadDump(threadDumpContent, filename);
             String formattedReport = reportFormatterService.formatReport(report, format);
             
             HttpHeaders headers = new HttpHeaders();
             headers.add(HttpHeaders.CONTENT_TYPE, format.getContentType());
             headers.add("Content-Disposition", 
-                    String.format("attachment; filename=\"report_%s%s\"", report.getId(), format.getFileExtension()));
+                    String.format("attachment; filename=\"report_%s%s\"", report.id(), format.getFileExtension()));
             
             return ResponseEntity.ok()
                     .headers(headers)

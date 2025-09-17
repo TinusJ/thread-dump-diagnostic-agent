@@ -1,7 +1,7 @@
 package com.tinusj.threaddump.formatter;
 
 import com.tinusj.threaddump.model.DiagnosticReport;
-import com.tinusj.threaddump.model.ReportFormat;
+import com.tinusj.threaddump.enums.ReportFormat;
 
 /**
  * Interface for formatting diagnostic reports in different output formats.

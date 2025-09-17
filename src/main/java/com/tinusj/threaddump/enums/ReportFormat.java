@@ -1,4 +1,4 @@
-package com.tinusj.threaddump.model;
+package com.tinusj.threaddump.enums;
 
 /**
  * Enumeration representing the available output formats for diagnostic reports.

@@ -2,7 +2,7 @@ package com.tinusj.threaddump.formatter;
 
 import com.tinusj.threaddump.model.DiagnosticFinding;
 import com.tinusj.threaddump.model.DiagnosticReport;
-import com.tinusj.threaddump.model.ReportFormat;
+import com.tinusj.threaddump.enums.ReportFormat;
 import com.tinusj.threaddump.model.ThreadStatistics;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -28,51 +28,51 @@ public class TextReportFormatter implements ReportFormatter {
             sb.append("============================\n\n");
             
             // Basic info
-            sb.append("Report ID: ").append(report.getId()).append("\n");
-            sb.append("Timestamp: ").append(report.getTimestamp().format(DATE_FORMATTER)).append("\n");
-            sb.append("Source: ").append(report.getSource()).append("\n");
-            sb.append("Status: ").append(report.getStatus()).append("\n\n");
+            sb.append("Report ID: ").append(report.id()).append("\n");
+            sb.append("Timestamp: ").append(report.timestamp().format(DATE_FORMATTER)).append("\n");
+            sb.append("Source: ").append(report.source()).append("\n");
+            sb.append("Status: ").append(report.status()).append("\n\n");
             
             // Summary
             sb.append("SUMMARY\n");
             sb.append("-------\n");
-            sb.append(report.getSummary()).append("\n\n");
+            sb.append(report.summary()).append("\n\n");
             
             // Statistics
-            if (report.getStatistics() != null) {
-                ThreadStatistics stats = report.getStatistics();
+            if (report.statistics() != null) {
+                ThreadStatistics stats = report.statistics();
                 sb.append("THREAD STATISTICS\n");
                 sb.append("-----------------\n");
-                sb.append("Total Threads: ").append(stats.getTotalThreads()).append("\n");
-                sb.append("Daemon Threads: ").append(stats.getDaemonThreads()).append("\n");
-                sb.append("Runnable Threads: ").append(stats.getRunnableThreads()).append("\n");
-                sb.append("Blocked Threads: ").append(stats.getBlockedThreads()).append("\n");
-                sb.append("Waiting Threads: ").append(stats.getWaitingThreads()).append("\n\n");
+                sb.append("Total Threads: ").append(stats.totalThreads()).append("\n");
+                sb.append("Daemon Threads: ").append(stats.daemonThreads()).append("\n");
+                sb.append("Runnable Threads: ").append(stats.runnableThreads()).append("\n");
+                sb.append("Blocked Threads: ").append(stats.blockedThreads()).append("\n");
+                sb.append("Waiting Threads: ").append(stats.waitingThreads()).append("\n\n");
                 
-                if (stats.getThreadsByState() != null && !stats.getThreadsByState().isEmpty()) {
+                if (stats.threadsByState() != null && !stats.threadsByState().isEmpty()) {
                     sb.append("Threads by State:\n");
-                    stats.getThreadsByState().forEach((state, count) ->
+                    stats.threadsByState().forEach((state, count) ->
                             sb.append("  ").append(state).append(": ").append(count).append("\n"));
                     sb.append("\n");
                 }
             }
             
             // Findings
-            if (report.getFindings() != null && !report.getFindings().isEmpty()) {
+            if (report.findings() != null && !report.findings().isEmpty()) {
                 sb.append("DIAGNOSTIC FINDINGS\n");
                 sb.append("-------------------\n");
                 
-                for (int i = 0; i < report.getFindings().size(); i++) {
-                    DiagnosticFinding finding = report.getFindings().get(i);
-                    sb.append(String.format("%d. %s [%s]\n", i + 1, finding.getType(), finding.getSeverity()));
-                    sb.append("   Description: ").append(finding.getDescription()).append("\n");
+                for (int i = 0; i < report.findings().size(); i++) {
+                    DiagnosticFinding finding = report.findings().get(i);
+                    sb.append(String.format("%d. %s [%s]\n", i + 1, finding.type(), finding.severity()));
+                    sb.append("   Description: ").append(finding.description()).append("\n");
                     
-                    if (finding.getAffectedThreads() != null && !finding.getAffectedThreads().isEmpty()) {
-                        sb.append("   Affected Threads: ").append(String.join(", ", finding.getAffectedThreads())).append("\n");
+                    if (finding.affectedThreads() != null && !finding.affectedThreads().isEmpty()) {
+                        sb.append("   Affected Threads: ").append(String.join(", ", finding.affectedThreads())).append("\n");
                     }
                     
-                    if (finding.getRecommendation() != null) {
-                        sb.append("   Recommendation: ").append(finding.getRecommendation()).append("\n");
+                    if (finding.recommendation() != null) {
+                        sb.append("   Recommendation: ").append(finding.recommendation()).append("\n");
                     }
                     
                     sb.append("\n");
@@ -80,12 +80,12 @@ public class TextReportFormatter implements ReportFormatter {
             }
             
             // Suggested fixes
-            if (report.getSuggestedFixes() != null && !report.getSuggestedFixes().isEmpty()) {
+            if (report.suggestedFixes() != null && !report.suggestedFixes().isEmpty()) {
                 sb.append("SUGGESTED FIXES\n");
                 sb.append("---------------\n");
                 
-                for (int i = 0; i < report.getSuggestedFixes().size(); i++) {
-                    sb.append(String.format("%d. %s\n", i + 1, report.getSuggestedFixes().get(i)));
+                for (int i = 0; i < report.suggestedFixes().size(); i++) {
+                    sb.append(String.format("%d. %s\n", i + 1, report.suggestedFixes().get(i)));
                 }
                 sb.append("\n");
             }

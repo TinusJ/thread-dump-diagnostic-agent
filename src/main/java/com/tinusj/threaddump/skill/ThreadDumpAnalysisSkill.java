@@ -1,7 +1,7 @@
 package com.tinusj.threaddump.skill;
 
 import com.tinusj.threaddump.model.DiagnosticReport;
-import com.tinusj.threaddump.model.ReportFormat;
+import com.tinusj.threaddump.enums.ReportFormat;
 import com.tinusj.threaddump.service.DiagnosticService;
 import com.tinusj.threaddump.service.ReportFormatterService;
 import lombok.extern.slf4j.Slf4j;
@@ -55,10 +55,10 @@ public class ThreadDumpAnalysisSkill {
             
             log.info("MCP: Analyzing thread dump from source: {}, format: {}", source, format);
             
-            DiagnosticReport report = diagnosticService.analyzThreadDump(content, source);
+            DiagnosticReport report = diagnosticService.analyzeThreadDump(content, source);
             String formattedReport = reportFormatterService.formatReport(report, format);
             
-            log.info("MCP: Thread dump analysis completed successfully, report ID: {}", report.getId());
+            log.info("MCP: Thread dump analysis completed successfully, report ID: {}", report.id());
             
             return formattedReport;
             

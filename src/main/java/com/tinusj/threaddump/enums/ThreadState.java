@@ -1,4 +1,4 @@
-package com.tinusj.threaddump.model;
+package com.tinusj.threaddump.enums;
 
 /**
  * Enumeration representing thread states found in thread dumps.

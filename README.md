@@ -14,8 +14,8 @@ A Spring Boot 3 MCP-enabled diagnostic agent for analyzing Java thread dumps. Th
 
 ## Technology Stack
 
-- **Java 17**
-- **Spring Boot 3.3.0**
+- **Java 21**
+- **Spring Boot 3.5.5**
 - **Spring AI MCP Server** (ready for integration when available)
 - **Maven**
 - **Lombok**
@@ -25,7 +25,7 @@ A Spring Boot 3 MCP-enabled diagnostic agent for analyzing Java thread dumps. Th
 
 ### Prerequisites
 
-- Java 17 or higher
+- Java 21 or higher
 - Maven 3.6+
 
 ### Building the Application

@@ -1,23 +1,20 @@
 package com.tinusj.threaddump.model;
 
-import lombok.Builder;
-import lombok.Data;
+import com.tinusj.threaddump.enums.ThreadState;
 
 import java.util.List;
 
 /**
  * Represents information about a single thread in a thread dump.
  */
-@Data
-@Builder
-public class ThreadInfo {
-    private String name;
-    private long id;
-    private ThreadState state;
-    private String lockName;
-    private String lockOwner;
-    private List<String> stackTrace;
-    private boolean daemon;
-    private int priority;
-    private String group;
-}
+public record ThreadInfo(
+    String name,
+    long id,
+    ThreadState state,
+    String lockName,
+    String lockOwner,
+    List<String> stackTrace,
+    boolean daemon,
+    int priority,
+    String group
+) {}
