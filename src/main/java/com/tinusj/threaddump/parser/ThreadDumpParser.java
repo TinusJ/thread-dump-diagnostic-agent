@@ -24,10 +24,18 @@ public class ThreadDumpParser {
     private static final Pattern THREAD_STATE_PATTERN = Pattern.compile(
         "java\\.lang\\.Thread\\.State:\\s*(\\w+)"
     );
+    
+    private static final Pattern LOCK_PATTERN = Pattern.compile(
+        "- waiting (?:on|to lock) <([^>]+)> \\((?:a )?([^)]+)\\)"
+    );
+    
+    private static final Pattern LOCK_OWNER_PATTERN = Pattern.compile(
+        "- locked <([^>]+)> \\((?:a )?([^)]+)\\)"
+    );
 
     /**
      * Parses thread dump content and extracts thread information.
-     * This is a basic stub implementation.
+     * Enhanced implementation with better lock detection.
      * 
      * @param threadDumpContent the raw thread dump content
      * @return list of parsed thread information
@@ -39,7 +47,7 @@ public class ThreadDumpParser {
             return threads;
         }
         
-        // Split by thread boundaries (basic approach)
+        // Split by thread boundaries (improved approach)
         String[] threadBlocks = threadDumpContent.split("(?=\"[^\"]*\"\\s*#\\d+)");
         
         for (String block : threadBlocks) {
@@ -82,11 +90,32 @@ public class ThreadDumpParser {
             }
         }
         
-        // Extract stack trace (simplified)
+        // Enhanced lock parsing
+        Matcher lockMatcher = LOCK_PATTERN.matcher(block);
+        if (lockMatcher.find()) {
+            lockName = lockMatcher.group(1);
+        }
+        
+        // Parse lock owner information
+        Matcher lockOwnerMatcher = LOCK_OWNER_PATTERN.matcher(block);
+        if (lockOwnerMatcher.find()) {
+            lockOwner = lockOwnerMatcher.group(1);
+        }
+        
+        // Extract stack trace
         List<String> stackTrace = extractStackTrace(block);
         
         // Check if daemon thread
         daemon = block.contains("daemon");
+        
+        // Extract thread group if available
+        if (block.contains("group=\"")) {
+            int start = block.indexOf("group=\"") + 7;
+            int end = block.indexOf("\"", start);
+            if (end > start) {
+                group = block.substring(start, end);
+            }
+        }
         
         return new ThreadInfo(name, id, state, lockName, lockOwner, stackTrace, daemon, priority, group);
     }

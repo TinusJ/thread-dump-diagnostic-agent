@@ -157,13 +157,63 @@ thread-dump:
 
 ## Diagnostic Capabilities
 
-The analyzer can detect:
+The analyzer provides comprehensive thread dump analysis with the following enhanced capabilities:
 
-1. **Deadlocks**: Identifies potential deadlock situations
-2. **High Thread Count**: Warns when thread count exceeds thresholds
-3. **Blocked Threads**: Detects excessive thread blocking
-4. **Waiting Threads**: Identifies high numbers of waiting threads
-5. **Performance Hotspots**: Finds frequently called methods in stack traces
+### Core Analysis Features
+
+1. **Advanced Deadlock Detection**: 
+   - Identifies circular lock dependencies and potential deadlocks
+   - Maps lock contention with specific thread and resource details
+   - Provides severity escalation (CRITICAL) for deadlock situations
+
+2. **Thread States Overview**: 
+   - Detailed thread state statistics (RUNNABLE, WAITING, BLOCKED, TIMED_WAITING, etc.)
+   - Thread group categorization and analysis
+   - State distribution analysis with percentages
+
+3. **Hotspots & Bottlenecks Analysis**:
+   - **CPU Hotspots**: Identifies frequently executed methods in runnable threads
+   - **Lock Contention Hotspots**: Detects methods causing excessive thread blocking
+   - Performance impact scoring based on occurrence frequency
+
+4. **Intelligent Thread Grouping**:
+   - Automatic categorization into logical groups:
+     - **GC**: Garbage collection threads
+     - **HTTP/Web**: HTTP connectors, NIO, Tomcat, Jetty, Netty threads
+     - **Database**: Connection pools, database-related threads
+     - **Thread Pool**: Executor services, worker threads, schedulers
+     - **JVM Internal**: JVM system threads, compiler threads
+     - **Application**: Main application and business logic threads
+     - **Other**: Uncategorized threads
+   - Group-specific analysis and recommendations
+
+5. **Suspicious Pattern Detection**:
+   - **Thread Starvation**: Detects scenarios with many blocked threads and few runnable ones
+   - **Excessive Blocking**: Identifies high percentages of blocked threads
+   - **Identical Stack Traces**: Finds multiple threads with same execution patterns
+   - **Resource Contention**: Analyzes shared resource bottlenecks
+
+6. **Enhanced Recommendations**:
+   - Specific, actionable suggestions for each finding type
+   - Technology-specific recommendations (database, HTTP, threading)
+   - Performance optimization guidance
+   - Best practices for concurrent programming
+
+### Detection Types
+
+The analyzer can detect and classify these issue types:
+
+- `POTENTIAL_DEADLOCK`: Circular lock dependencies (CRITICAL)
+- `CPU_HOTSPOT`: High-frequency method execution (HIGH/MEDIUM)
+- `LOCK_CONTENTION_HOTSPOT`: Methods causing blocking (HIGH)
+- `THREAD_STARVATION`: Insufficient runnable threads (CRITICAL)
+- `EXCESSIVE_BLOCKING`: High blocked thread percentage (HIGH)
+- `EXCESSIVE_HTTP_THREADS`: Too many HTTP/Web threads (MEDIUM)
+- `DATABASE_CONNECTION_CONTENTION`: DB connection pool issues (HIGH)
+- `IDENTICAL_STACK_TRACES`: Resource contention patterns (MEDIUM)
+- `HIGH_THREAD_COUNT`: Excessive total thread count (MEDIUM)
+- `HIGH_BLOCKED_THREADS`: Many blocked threads (MEDIUM/HIGH)
+- `HIGH_WAITING_THREADS`: Many waiting threads (LOW/MEDIUM)
 
 The process detection can provide:
 
@@ -173,31 +223,95 @@ The process detection can provide:
 
 ## Sample Output
 
-### JSON Report
+### Enhanced JSON Report
 ```json
 {
-  "id": "uuid-here",
-  "timestamp": "2023-12-01 10:30:00",
-  "source": "sample.txt",
+  "id": "2a11a183-54f4-446d-8774-b38b4574ad2a",
+  "timestamp": "2025-09-17T10:09:18",
+  "source": "production-server",
   "statistics": {
-    "totalThreads": 25,
-    "blockedThreads": 2,
-    "waitingThreads": 10,
-    "runnableThreads": 13
+    "totalThreads": 156,
+    "threadsByState": {
+      "RUNNABLE": 45,
+      "BLOCKED": 23,
+      "WAITING": 67,
+      "TIMED_WAITING": 21
+    },
+    "daemonThreads": 89,
+    "blockedThreads": 23,
+    "waitingThreads": 88,
+    "runnableThreads": 45,
+    "threadGroups": {
+      "HTTP/Web": 45,
+      "Database": 28,
+      "Thread Pool": 34,
+      "GC": 12,
+      "JVM Internal": 18,
+      "Application": 19
+    }
   },
   "findings": [
     {
-      "type": "HIGH_WAITING_THREADS",
-      "description": "High number of waiting threads: 10",
-      "severity": "MEDIUM",
-      "recommendation": "Review thread coordination and consider reducing wait times"
+      "type": "POTENTIAL_DEADLOCK",
+      "description": "Multiple threads are blocked waiting for locks. 15 threads involved.",
+      "severity": "CRITICAL",
+      "affectedThreads": [
+        "http-nio-8080-exec-1 (waiting for: 0x000000076ab62208)",
+        "http-nio-8080-exec-2 (waiting for: 0x000000076ab62300)",
+        "database-pool-3 (waiting for: 0x000000076ab62208)"
+      ],
+      "recommendation": "Implement consistent lock ordering across all threads and consider using timeout-based locking",
+      "details": {
+        "blockedThreadCount": 15,
+        "lockContention": {
+          "0x000000076ab62208": 8,
+          "0x000000076ab62300": 7
+        }
+      }
+    },
+    {
+      "type": "CPU_HOTSPOT",
+      "description": "Method frequently appears in runnable thread stack traces: com.example.service.BusinessService.calculateResult (12 occurrences)",
+      "severity": "HIGH",
+      "affectedThreads": [
+        "worker-thread-1",
+        "worker-thread-3",
+        "http-nio-8080-exec-5"
+      ],
+      "recommendation": "Profile and optimize this frequently executed method. Consider caching or algorithm improvements.",
+      "details": {
+        "method": "com.example.service.BusinessService.calculateResult",
+        "occurrences": 12,
+        "threadCount": 8
+      }
+    },
+    {
+      "type": "DATABASE_CONNECTION_CONTENTION",
+      "description": "Multiple database threads are blocked: 12 out of 28",
+      "severity": "HIGH",
+      "affectedThreads": [
+        "HikariPool-1-connection-1",
+        "HikariPool-1-connection-2",
+        "database-worker-3"
+      ],
+      "recommendation": "Check database connection pool configuration and query performance",
+      "details": {
+        "blockedThreads": 12,
+        "totalDbThreads": 28
+      }
     }
   ],
   "suggestedFixes": [
-    "Optimize thread coordination and reduce unnecessary waiting",
-    "Review timeout values for blocking operations"
+    "Implement consistent lock ordering across all threads",
+    "Use timeout-based locking mechanisms (tryLock with timeout)",
+    "Consider using higher-level concurrency utilities like java.util.concurrent",
+    "Profile and optimize frequently called methods",
+    "Consider caching results for expensive operations",
+    "Increase database connection pool size",
+    "Optimize database queries and reduce query execution time",
+    "Review HTTP/Web thread group usage - 45 threads may be excessive"
   ],
-  "summary": "Analyzed 25 threads. 2 blocked, 10 waiting, 13 runnable. Found 1 issues (1 medium)."
+  "summary": "Analyzed 156 threads. 23 blocked, 88 waiting, 45 runnable. Top groups: HTTP/Web(45), Thread Pool(34), Database(28). Found 3 issues (1 critical, 2 high, 0 medium)."
 }
 ```
 

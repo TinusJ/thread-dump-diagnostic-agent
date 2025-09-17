@@ -13,5 +13,6 @@ public record ThreadStatistics(
     int daemonThreads,
     int blockedThreads,
     int waitingThreads,
-    int runnableThreads
+    int runnableThreads,
+    Map<String, Integer> threadGroups
 ) {}
