@@ -60,7 +60,7 @@ public class ThreadDumpController {
     @PostMapping("/analyze-text")
     public ResponseEntity<String> analyzeThreadDumpText(
             @RequestBody String threadDumpContent,
-            @RequestParam(defaultValue = "JSON") ReportFormat format) {
+            @RequestParam(name = "format", defaultValue = "JSON") ReportFormat format) {
         
         log.info("Analyzing thread dump from text input, format: {}", format);
         
@@ -322,7 +322,7 @@ public class ThreadDumpController {
     @PostMapping("/generate-and-analyze/{pid}")
     public ResponseEntity<String> generateAndAnalyzeThreadDump(
             @PathVariable long pid,
-            @RequestParam(defaultValue = "JSON") ReportFormat format) {
+            @RequestParam(name = "format", defaultValue = "JSON") ReportFormat format) {
         
         log.info("Generating and analyzing thread dump for PID: {}, format: {}", pid, format);
         
