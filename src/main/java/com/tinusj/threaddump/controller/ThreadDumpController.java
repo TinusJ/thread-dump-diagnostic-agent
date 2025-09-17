@@ -6,6 +6,7 @@ import com.tinusj.threaddump.enums.ReportFormat;
 import com.tinusj.threaddump.service.DiagnosticService;
 import com.tinusj.threaddump.service.JavaProcessService;
 import com.tinusj.threaddump.service.ReportFormatterService;
+import com.tinusj.threaddump.service.ThreadDumpGenerationService;
 import com.tinusj.threaddump.skill.ThreadDumpAnalysisSkill;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -35,15 +36,18 @@ public class ThreadDumpController {
     private final ReportFormatterService reportFormatterService;
     private final ThreadDumpAnalysisSkill mcpSkill;
     private final JavaProcessService javaProcessService;
+    private final ThreadDumpGenerationService threadDumpGenerationService;
     
     public ThreadDumpController(DiagnosticService diagnosticService, 
                               ReportFormatterService reportFormatterService,
                               ThreadDumpAnalysisSkill mcpSkill,
-                              JavaProcessService javaProcessService) {
+                              JavaProcessService javaProcessService,
+                              ThreadDumpGenerationService threadDumpGenerationService) {
         this.diagnosticService = diagnosticService;
         this.reportFormatterService = reportFormatterService;
         this.mcpSkill = mcpSkill;
         this.javaProcessService = javaProcessService;
+        this.threadDumpGenerationService = threadDumpGenerationService;
     }
     
     /**
@@ -268,6 +272,161 @@ public class ThreadDumpController {
         } catch (Exception e) {
             log.error("Error getting Java process with PID: {}", pid, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    /**
+     * Generates a thread dump for the specified Java process PID.
+     * 
+     * @param pid the process ID of the Java process
+     * @return the thread dump content as plain text
+     */
+    @PostMapping("/generate/{pid}")
+    public ResponseEntity<String> generateThreadDump(@PathVariable long pid) {
+        log.info("Generating thread dump for PID: {}", pid);
+        
+        try {
+            if (!threadDumpGenerationService.isAvailable()) {
+                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                        .body("Thread dump generation is not available on this system");
+            }
+            
+            String threadDump = threadDumpGenerationService.generateThreadDump(pid);
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.CONTENT_TYPE, "text/plain");
+            headers.add("Content-Disposition", String.format("attachment; filename=\"threaddump_%d.txt\"", pid));
+            
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(threadDump);
+                    
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid PID for thread dump generation: {}", pid, e);
+            return ResponseEntity.badRequest()
+                    .body("Invalid PID: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Error generating thread dump for PID: {}", pid, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to generate thread dump: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Generates a thread dump for the specified Java process PID and immediately analyzes it.
+     * 
+     * @param pid the process ID of the Java process
+     * @param format the desired output format for the analysis (default: JSON)
+     * @return diagnostic report in the specified format
+     */
+    @PostMapping("/generate-and-analyze/{pid}")
+    public ResponseEntity<String> generateAndAnalyzeThreadDump(
+            @PathVariable long pid,
+            @RequestParam(defaultValue = "JSON") ReportFormat format) {
+        
+        log.info("Generating and analyzing thread dump for PID: {}, format: {}", pid, format);
+        
+        try {
+            if (!threadDumpGenerationService.isAvailable()) {
+                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                        .body("Thread dump generation is not available on this system");
+            }
+            
+            // Generate thread dump
+            String threadDump = threadDumpGenerationService.generateThreadDump(pid);
+            
+            // Analyze thread dump
+            String source = "pid-" + pid;
+            DiagnosticReport report = diagnosticService.analyzeThreadDump(threadDump, source);
+            String formattedReport = reportFormatterService.formatReport(report, format);
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.CONTENT_TYPE, format.getContentType());
+            headers.add("Content-Disposition", 
+                    String.format("attachment; filename=\"analysis_%d_%s%s\"", pid, report.id(), format.getFileExtension()));
+            
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(formattedReport);
+                    
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid PID for thread dump generation and analysis: {}", pid, e);
+            return ResponseEntity.badRequest()
+                    .body("Invalid PID: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Error generating and analyzing thread dump for PID: {}", pid, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to generate and analyze thread dump: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * MCP skill endpoint for generating thread dumps from PIDs.
+     * This provides MCP-compatible functionality via REST API.
+     * 
+     * @param arguments the MCP arguments containing pid
+     * @return thread dump content as plain text
+     */
+    @PostMapping("/mcp-generate")
+    public ResponseEntity<String> mcpGenerateThreadDump(@RequestBody Map<String, Object> arguments) {
+        log.info("MCP endpoint: Generating thread dump");
+        
+        try {
+            String result = mcpSkill.handleGenerateThreadDump(arguments);
+            
+            // Check if result is an error
+            if (result.startsWith("Error:")) {
+                return ResponseEntity.badRequest().body(result);
+            }
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.CONTENT_TYPE, "text/plain");
+            
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(result);
+                    
+        } catch (Exception e) {
+            log.error("MCP endpoint: Error generating thread dump", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * MCP skill endpoint for generating and analyzing thread dumps from PIDs.
+     * This provides MCP-compatible functionality via REST API.
+     * 
+     * @param arguments the MCP arguments containing pid and format
+     * @return formatted diagnostic report
+     */
+    @PostMapping("/mcp-generate-and-analyze")
+    public ResponseEntity<String> mcpGenerateAndAnalyzeThreadDump(@RequestBody Map<String, Object> arguments) {
+        log.info("MCP endpoint: Generating and analyzing thread dump");
+        
+        try {
+            String result = mcpSkill.handleGenerateAndAnalyzeThreadDump(arguments);
+            
+            // Check if result is an error
+            if (result.startsWith("Error:")) {
+                return ResponseEntity.badRequest().body(result);
+            }
+            
+            // Determine content type based on format argument
+            String formatStr = (String) arguments.getOrDefault("format", "JSON");
+            ReportFormat format = ReportFormat.valueOf(formatStr.toUpperCase());
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.CONTENT_TYPE, format.getContentType());
+            
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(result);
+                    
+        } catch (Exception e) {
+            log.error("MCP endpoint: Error generating and analyzing thread dump", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error: " + e.getMessage());
         }
     }
 }

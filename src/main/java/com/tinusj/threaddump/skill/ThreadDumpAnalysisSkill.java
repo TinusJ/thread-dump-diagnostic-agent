@@ -6,6 +6,7 @@ import com.tinusj.threaddump.enums.ReportFormat;
 import com.tinusj.threaddump.service.DiagnosticService;
 import com.tinusj.threaddump.service.JavaProcessService;
 import com.tinusj.threaddump.service.ReportFormatterService;
+import com.tinusj.threaddump.service.ThreadDumpGenerationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -24,13 +25,16 @@ public class ThreadDumpAnalysisSkill {
     private final DiagnosticService diagnosticService;
     private final ReportFormatterService reportFormatterService;
     private final JavaProcessService javaProcessService;
+    private final ThreadDumpGenerationService threadDumpGenerationService;
     
     public ThreadDumpAnalysisSkill(DiagnosticService diagnosticService, 
                                  ReportFormatterService reportFormatterService,
-                                 JavaProcessService javaProcessService) {
+                                 JavaProcessService javaProcessService,
+                                 ThreadDumpGenerationService threadDumpGenerationService) {
         this.diagnosticService = diagnosticService;
         this.reportFormatterService = reportFormatterService;
         this.javaProcessService = javaProcessService;
+        this.threadDumpGenerationService = threadDumpGenerationService;
     }
     
     /**
@@ -261,8 +265,153 @@ public class ThreadDumpAnalysisSkill {
                 "        },\n" +
                 "        \"required\": []\n" +
                 "      }\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"name\": \"generate_thread_dump\",\n" +
+                "      \"description\": \"Generates a thread dump from a running Java process using its PID\",\n" +
+                "      \"inputSchema\": {\n" +
+                "        \"type\": \"object\",\n" +
+                "        \"properties\": {\n" +
+                "          \"pid\": {\n" +
+                "            \"type\": \"integer\",\n" +
+                "            \"description\": \"The process ID of the Java process to generate thread dump for\"\n" +
+                "          }\n" +
+                "        },\n" +
+                "        \"required\": [\"pid\"]\n" +
+                "      }\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"name\": \"generate_and_analyze_thread_dump\",\n" +
+                "      \"description\": \"Generates a thread dump from a running Java process and immediately analyzes it for diagnostic insights\",\n" +
+                "      \"inputSchema\": {\n" +
+                "        \"type\": \"object\",\n" +
+                "        \"properties\": {\n" +
+                "          \"pid\": {\n" +
+                "            \"type\": \"integer\",\n" +
+                "            \"description\": \"The process ID of the Java process to generate thread dump for\"\n" +
+                "          },\n" +
+                "          \"format\": {\n" +
+                "            \"type\": \"string\",\n" +
+                "            \"enum\": [\"JSON\", \"XML\", \"TEXT\"],\n" +
+                "            \"description\": \"Output format for the diagnostic report\",\n" +
+                "            \"default\": \"JSON\"\n" +
+                "          }\n" +
+                "        },\n" +
+                "        \"required\": [\"pid\"]\n" +
+                "      }\n" +
                 "    }\n" +
                 "  ]\n" +
                 "}";
+    }
+    
+    /**
+     * Handles the thread dump generation tool invocation.
+     * This method provides the core functionality for generating thread dumps from PIDs.
+     * 
+     * Expected arguments:
+     * - pid (required): The process ID to generate thread dump for
+     */
+    public String handleGenerateThreadDump(Map<String, Object> arguments) {
+        try {
+            if (!threadDumpGenerationService.isAvailable()) {
+                return "Error: Thread dump generation is not available on this system";
+            }
+            
+            Object pidObj = arguments.get("pid");
+            if (pidObj == null) {
+                return "Error: PID is required";
+            }
+            
+            long pid;
+            if (pidObj instanceof Number) {
+                pid = ((Number) pidObj).longValue();
+            } else if (pidObj instanceof String) {
+                try {
+                    pid = Long.parseLong((String) pidObj);
+                } catch (NumberFormatException e) {
+                    return "Error: Invalid PID format - must be a number";
+                }
+            } else {
+                return "Error: Invalid PID type - must be a number or string";
+            }
+            
+            log.info("MCP: Generating thread dump for PID: {}", pid);
+            
+            String threadDump = threadDumpGenerationService.generateThreadDump(pid);
+            
+            log.info("MCP: Thread dump generation completed successfully for PID: {}", pid);
+            
+            return threadDump;
+            
+        } catch (IllegalArgumentException e) {
+            log.error("MCP: Invalid PID for thread dump generation", e);
+            return "Error: " + e.getMessage();
+        } catch (Exception e) {
+            log.error("MCP: Error generating thread dump", e);
+            return "Error: Failed to generate thread dump - " + e.getMessage();
+        }
+    }
+    
+    /**
+     * Handles the thread dump generation and analysis tool invocation.
+     * This method provides the core functionality for generating and analyzing thread dumps from PIDs.
+     * 
+     * Expected arguments:
+     * - pid (required): The process ID to generate thread dump for
+     * - format (optional): Output format (JSON, XML, TEXT) - defaults to JSON
+     */
+    public String handleGenerateAndAnalyzeThreadDump(Map<String, Object> arguments) {
+        try {
+            if (!threadDumpGenerationService.isAvailable()) {
+                return "Error: Thread dump generation is not available on this system";
+            }
+            
+            Object pidObj = arguments.get("pid");
+            if (pidObj == null) {
+                return "Error: PID is required";
+            }
+            
+            long pid;
+            if (pidObj instanceof Number) {
+                pid = ((Number) pidObj).longValue();
+            } else if (pidObj instanceof String) {
+                try {
+                    pid = Long.parseLong((String) pidObj);
+                } catch (NumberFormatException e) {
+                    return "Error: Invalid PID format - must be a number";
+                }
+            } else {
+                return "Error: Invalid PID type - must be a number or string";
+            }
+            
+            String formatStr = (String) arguments.getOrDefault("format", "JSON");
+            ReportFormat format;
+            try {
+                format = ReportFormat.valueOf(formatStr.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return "Error: Unsupported format '" + formatStr + "'. Supported formats: JSON, XML, TEXT";
+            }
+            
+            log.info("MCP: Generating and analyzing thread dump for PID: {}, format: {}", pid, format);
+            
+            // Generate thread dump
+            String threadDump = threadDumpGenerationService.generateThreadDump(pid);
+            
+            // Analyze thread dump
+            String source = "pid-" + pid;
+            DiagnosticReport report = diagnosticService.analyzeThreadDump(threadDump, source);
+            String formattedReport = reportFormatterService.formatReport(report, format);
+            
+            log.info("MCP: Thread dump generation and analysis completed successfully for PID: {}, report ID: {}", pid, report.id());
+            
+            return formattedReport;
+            
+        } catch (IllegalArgumentException e) {
+            log.error("MCP: Invalid PID for thread dump generation and analysis", e);
+            return "Error: " + e.getMessage();
+        } catch (Exception e) {
+            log.error("MCP: Error generating and analyzing thread dump", e);
+            return "Error: Failed to generate and analyze thread dump - " + e.getMessage();
+        }
     }
 }
