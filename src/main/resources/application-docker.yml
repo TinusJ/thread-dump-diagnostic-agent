@@ -1,0 +1,41 @@
+# Docker-specific configuration
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: thread-dump-diagnostic-agent
+    
+logging:
+  level:
+    com.tinusj.threaddump: INFO
+    org.springframework.web: WARN
+    root: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+  server:
+    port: 8080
+    base-path: /actuator
+
+# Docker-optimized thread dump settings
+thread-dump:
+  analysis:
+    max-threads-warning: 2000
+    deadlock-detection: true
+    blocked-threads-threshold: 20
+    waiting-threads-threshold: 100
+  reports:
+    default-format: JSON
+    include-thread-details: true
+    include-stack-traces: false  # Reduce memory usage in containerized environment

@@ -26,8 +26,10 @@ A Spring Boot 3 MCP-enabled diagnostic agent for analyzing Java thread dumps. Th
 
 ### Prerequisites
 
-- Java 21 or higher
+- Java 17 or higher
 - Maven 3.6+
+- Docker (optional, for containerized deployment)
+- Docker Compose (optional, for multi-service deployment)
 
 ### Building the Application
 
@@ -37,11 +39,64 @@ mvn clean compile
 
 ### Running the Application
 
+#### Local Development
 ```bash
 mvn spring-boot:run
 ```
 
 The application will start on port 8080 with context path `/api`.
+
+#### Docker Deployment
+
+##### Build Docker Image
+```bash
+# First build the JAR
+mvn clean package -DskipTests
+
+# Build Docker image
+docker build -t thread-dump-diagnostic-agent:latest .
+```
+
+##### Run Single Container
+```bash
+# REST API only
+docker run -p 8080:8080 thread-dump-diagnostic-agent:latest
+
+# MCP configuration
+docker run -p 8081:8081 \
+  -e SPRING_PROFILES_ACTIVE=docker,mcp \
+  -e SERVER_PORT=8081 \
+  -e SERVER_SERVLET_CONTEXT_PATH=/mcp \
+  thread-dump-diagnostic-agent:latest
+```
+
+##### Docker Compose (Recommended)
+```bash
+# Start both REST and MCP services
+docker compose up -d
+
+# View logs
+docker compose logs -f
+
+# Stop services
+docker compose down
+```
+
+This will start:
+- **REST Service**: `http://localhost:8080/api/` - Primary REST API endpoints
+- **MCP Service**: `http://localhost:8081/mcp/` - MCP-focused endpoints
+
+##### Development with Docker Compose
+```bash
+# Use development override for hot-reloading
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+```
+
+##### Production with Nginx Proxy
+```bash
+# Start with nginx reverse proxy
+docker compose --profile with-proxy up -d
+```
 
 ### Running Tests
 
@@ -154,6 +209,49 @@ thread-dump:
     include-thread-details: true
     include-stack-traces: true
 ```
+
+### Docker Configuration
+
+The application supports multiple profiles for different deployment scenarios:
+
+#### Profiles
+
+- **`default`**: Standard configuration for local development
+- **`docker`**: Optimized for containerized environments
+- **`mcp`**: MCP-focused configuration with dedicated endpoints
+
+#### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `SPRING_PROFILES_ACTIVE` | Active Spring profiles | `default` |
+| `SERVER_PORT` | Server port | `8080` |
+| `SERVER_SERVLET_CONTEXT_PATH` | Context path | `/api` |
+| `JAVA_OPTS` | JVM options | `-Xmx512m -Xms256m` |
+
+#### Docker Compose Services
+
+The `docker-compose.yml` defines two services:
+
+1. **`thread-dump-rest`** (Port 8080)
+   - Primary REST API service
+   - Context path: `/api`
+   - Profile: `docker`
+
+2. **`thread-dump-mcp`** (Port 8081)
+   - MCP-focused service
+   - Context path: `/mcp`
+   - Profiles: `docker,mcp`
+
+3. **`nginx`** (Port 80/443) - Optional
+   - Reverse proxy for load balancing
+   - Enable with `--profile with-proxy`
+
+#### Health Checks
+
+Both services expose health check endpoints:
+- REST: `http://localhost:8080/api/actuator/health`
+- MCP: `http://localhost:8081/mcp/actuator/health`
 
 ## Diagnostic Capabilities
 
