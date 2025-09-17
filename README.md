@@ -5,10 +5,11 @@ A Spring Boot 3 MCP-enabled diagnostic agent for analyzing Java thread dumps. Th
 ## Features
 
 - **Thread Dump Analysis**: Parse and analyze Java thread dumps to identify potential issues
+- **Java Process Detection**: Detect and list all running Java processes with their PIDs and information
 - **Multiple Input Methods**: Accept thread dumps via REST API (text or file upload) and MCP server endpoints
 - **Comprehensive Diagnostics**: Detect deadlocks, blocked threads, performance hotspots, and suspicious patterns
 - **Configurable Output Formats**: Generate reports in JSON, XML, or plain text format
-- **MCP Server Integration**: Expose analysis capabilities as MCP tools for AI assistants
+- **MCP Server Integration**: Expose analysis and process detection capabilities as MCP tools for AI assistants
 - **Thread Statistics**: Detailed thread state analysis and statistics
 - **Suggested Fixes**: Actionable recommendations based on analysis findings
 
@@ -70,7 +71,17 @@ file: [thread dump file]
 
 #### Get Supported Formats
 ```bash
-POST /api/thread-dump/formats
+GET /api/thread-dump/formats
+```
+
+#### Get Running Java Processes
+```bash
+GET /api/thread-dump/processes
+```
+
+#### Get Specific Java Process by PID
+```bash
+GET /api/thread-dump/processes/{pid}
 ```
 
 ### Supported Output Formats
@@ -117,6 +128,16 @@ Provides MCP-compatible thread dump analysis.
 #### GET /api/thread-dump/mcp-tool-definition
 Returns the MCP tool definition JSON for integration with MCP clients.
 
+#### POST /api/thread-dump/mcp-processes
+Provides MCP-compatible Java process detection.
+
+**Request Body:**
+```json
+{
+  "format": "JSON"
+}
+```
+
 ## Configuration
 
 The application can be configured via `application.yml`:
@@ -143,6 +164,12 @@ The analyzer can detect:
 3. **Blocked Threads**: Detects excessive thread blocking
 4. **Waiting Threads**: Identifies high numbers of waiting threads
 5. **Performance Hotspots**: Finds frequently called methods in stack traces
+
+The process detection can provide:
+
+1. **Running Java Processes**: Lists all Java processes with PIDs
+2. **Process Information**: Main class, JVM arguments, application arguments
+3. **Multiple Output Formats**: JSON, XML, and plain text formats
 
 ## Sample Output
 
