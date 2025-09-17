@@ -1,0 +1,54 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: thread-dump-diagnostic-agent
+  
+  profiles:
+    active: dev
+
+logging:
+  level:
+    com.tinusj.threaddump: DEBUG
+    org.springframework.ai: INFO
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+thread-dump:
+  analysis:
+    timeout-seconds: 30
+    max-threads: 1000
+  mcp:
+    enabled: true
+    server-name: "Thread Dump Diagnostic Agent"
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+logging:
+  level:
+    root: INFO
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+logging:
+  level:
+    root: WARN
+    com.tinusj.threaddump: INFO

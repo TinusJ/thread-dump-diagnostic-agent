@@ -1,0 +1,16 @@
+com/tinusj/threaddump/model/ThreadInfo.class
+com/tinusj/threaddump/model/DiagnosticReport.class
+com/tinusj/threaddump/enums/DiagnosticType.class
+com/tinusj/threaddump/service/DiagnosticAnalysisService.class
+com/tinusj/threaddump/ThreadDumpDiagnosticAgentApplication.class
+com/tinusj/threaddump/service/impl/ThreadDumpServiceImpl.class
+com/tinusj/threaddump/service/impl/DiagnosticAnalysisServiceImpl.class
+com/tinusj/threaddump/exception/GlobalExceptionHandler$ErrorResponse.class
+com/tinusj/threaddump/controller/ThreadDumpController.class
+com/tinusj/threaddump/model/ThreadDumpResponse.class
+com/tinusj/threaddump/exception/GlobalExceptionHandler.class
+com/tinusj/threaddump/service/ThreadDumpService.class
+com/tinusj/threaddump/service/impl/ThreadDumpServiceImpl$1.class
+com/tinusj/threaddump/enums/DiagnosticSeverity.class
+com/tinusj/threaddump/model/ThreadDumpRequest.class
+com/tinusj/threaddump/enums/ThreadState.class
