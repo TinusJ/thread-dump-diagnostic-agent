@@ -4,6 +4,7 @@ import com.tinusj.threaddump.model.JavaProcess;
 import com.tinusj.threaddump.service.DiagnosticService;
 import com.tinusj.threaddump.service.JavaProcessService;
 import com.tinusj.threaddump.service.ReportFormatterService;
+import com.tinusj.threaddump.service.ThreadDumpGenerationService;
 import com.tinusj.threaddump.skill.ThreadDumpAnalysisSkill;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,11 +42,14 @@ class JavaProcessControllerTest {
     @Mock
     private ReportFormatterService reportFormatterService;
     
+    @Mock
+    private ThreadDumpGenerationService threadDumpGenerationService;
+    
     private ThreadDumpController controller;
     
     @BeforeEach
     void setUp() {
-        controller = new ThreadDumpController(diagnosticService, reportFormatterService, mcpSkill, javaProcessService);
+        controller = new ThreadDumpController(diagnosticService, reportFormatterService, mcpSkill, javaProcessService, threadDumpGenerationService);
     }
 
     @Test
