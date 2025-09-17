@@ -1,4 +1,0 @@
-com/tinusj/threaddump/service/DiagnosticServiceTest.class
-com/tinusj/threaddump/parser/ThreadDumpParserTest.class
-com/tinusj/threaddump/formatter/JsonReportFormatterTest.class
-com/tinusj/threaddump/controller/ThreadDumpControllerTest.class
