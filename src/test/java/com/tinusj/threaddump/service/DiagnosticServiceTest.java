@@ -13,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -46,7 +47,8 @@ class DiagnosticServiceTest {
                 0,
                 1,
                 2,
-                7
+                7,
+                Map.of("Application", 5, "HTTP/Web", 3, "Other", 2)
         );
         
         List<DiagnosticFinding> mockFindings = new ArrayList<>();

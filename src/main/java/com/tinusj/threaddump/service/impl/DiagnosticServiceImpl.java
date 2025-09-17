@@ -13,6 +13,9 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.UUID;
 
 /**
@@ -101,22 +104,74 @@ public class DiagnosticServiceImpl implements DiagnosticService {
             switch (finding.type()) {
                 case "POTENTIAL_DEADLOCK" -> {
                     fixes.add("Implement consistent lock ordering across all threads");
-                    fixes.add("Use timeout-based locking mechanisms");
-                    fixes.add("Consider using higher-level concurrency utilities");
+                    fixes.add("Use timeout-based locking mechanisms (tryLock with timeout)");
+                    fixes.add("Consider using higher-level concurrency utilities like java.util.concurrent");
+                    fixes.add("Review lock acquisition patterns and minimize lock holding time");
                 }
                 case "HIGH_THREAD_COUNT" -> {
                     fixes.add("Implement thread pooling with appropriate pool sizes");
-                    fixes.add("Review thread lifecycle management");
+                    fixes.add("Review thread lifecycle management and ensure proper cleanup");
+                    fixes.add("Consider using virtual threads (Project Loom) if available");
                 }
-                case "HOTSPOT" -> {
+                case "CPU_HOTSPOT", "HOTSPOT" -> {
                     fixes.add("Profile and optimize frequently called methods");
-                    fixes.add("Consider caching or algorithm improvements for hotspot methods");
+                    fixes.add("Consider caching results for expensive operations");
+                    fixes.add("Review algorithms for performance improvements");
+                    fixes.add("Consider parallel processing for CPU-intensive tasks");
+                }
+                case "LOCK_CONTENTION_HOTSPOT" -> {
+                    fixes.add("Reduce synchronization scope and use finer-grained locking");
+                    fixes.add("Consider lock-free data structures and algorithms");
+                    fixes.add("Use concurrent collections instead of synchronized collections");
+                    fixes.add("Implement read-write locks where appropriate");
+                }
+                case "HIGH_BLOCKED_THREADS" -> {
+                    fixes.add("Analyze lock contention and reduce synchronization overhead");
+                    fixes.add("Consider using non-blocking algorithms and data structures");
+                    fixes.add("Review critical sections and minimize lock holding time");
+                }
+                case "THREAD_STARVATION" -> {
+                    fixes.add("Increase thread pool sizes or use adaptive sizing");
+                    fixes.add("Review thread priorities and scheduling");
+                    fixes.add("Implement fair locking mechanisms");
+                    fixes.add("Consider using separate thread pools for different task types");
+                }
+                case "EXCESSIVE_HTTP_THREADS" -> {
+                    fixes.add("Tune HTTP connector thread pool configuration");
+                    fixes.add("Implement connection pooling and keep-alive optimization");
+                    fixes.add("Review request processing efficiency");
+                }
+                case "DATABASE_CONNECTION_CONTENTION" -> {
+                    fixes.add("Increase database connection pool size");
+                    fixes.add("Optimize database queries and reduce query execution time");
+                    fixes.add("Implement connection leak detection and prevention");
+                    fixes.add("Consider using read replicas for read-heavy workloads");
+                }
+                case "EXCESSIVE_BLOCKING" -> {
+                    fixes.add("Review synchronization patterns and reduce lock usage");
+                    fixes.add("Implement asynchronous processing where possible");
+                    fixes.add("Use message queues for decoupling components");
+                }
+                case "IDENTICAL_STACK_TRACES" -> {
+                    fixes.add("Investigate shared resource bottlenecks");
+                    fixes.add("Consider load balancing or partitioning strategies");
+                    fixes.add("Review serialization points in the application");
                 }
             }
         }
         
+        // Add thread group specific recommendations
+        if (statistics.threadGroups() != null) {
+            statistics.threadGroups().forEach((group, count) -> {
+                if (count > 100) {
+                    fixes.add(String.format("Review %s thread group usage - %d threads may be excessive", group, count));
+                }
+            });
+        }
+        
         if (fixes.isEmpty()) {
-            fixes.add("Thread dump appears healthy. Monitor for performance trends.");
+            fixes.add("Thread dump appears healthy. Continue monitoring for performance trends.");
+            fixes.add("Consider implementing thread dump collection automation for trend analysis.");
         }
         
         return fixes;
@@ -136,6 +191,16 @@ public class DiagnosticServiceImpl implements DiagnosticService {
         }
         
         summary.append(String.format("%d runnable. ", statistics.runnableThreads()));
+        
+        // Add thread group summary
+        if (statistics.threadGroups() != null && !statistics.threadGroups().isEmpty()) {
+            String topGroups = statistics.threadGroups().entrySet().stream()
+                    .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+                    .limit(3)
+                    .map(e -> String.format("%s(%d)", e.getKey(), e.getValue()))
+                    .collect(Collectors.joining(", "));
+            summary.append(String.format("Top groups: %s. ", topGroups));
+        }
         
         if (findings.isEmpty()) {
             summary.append("No significant issues detected.");
