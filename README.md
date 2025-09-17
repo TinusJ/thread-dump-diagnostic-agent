@@ -26,7 +26,7 @@ A Spring Boot 3 MCP-enabled diagnostic agent for analyzing Java thread dumps. Th
 
 ### Prerequisites
 
-- Java 17 or higher
+- Java 21 or higher
 - Maven 3.6+
 - Docker (optional, for containerized deployment)
 - Docker Compose (optional, for multi-service deployment)

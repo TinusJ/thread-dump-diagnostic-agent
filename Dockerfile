@@ -1,5 +1,5 @@
 # Simple Dockerfile using pre-built JAR
-FROM eclipse-temurin:17-jre-jammy
+FROM eclipse-temurin:21-jre-jammy
 
 # Create a non-root user
 RUN groupadd -r appuser && useradd -r -g appuser appuser
