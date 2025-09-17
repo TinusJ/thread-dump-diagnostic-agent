@@ -91,7 +91,7 @@ public class ThreadDumpController {
     @PostMapping("/analyze-file")
     public ResponseEntity<String> analyzeThreadDumpFile(
             @RequestParam("file") MultipartFile file,
-            @RequestParam(defaultValue = "JSON") ReportFormat format) {
+            @RequestParam(name = "format", defaultValue = "JSON") ReportFormat format) {
         
         log.info("Analyzing thread dump from file: {}, format: {}", file.getOriginalFilename(), format);
         
